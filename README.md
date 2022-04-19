@@ -1,3 +1,3 @@
 # swrv demo
 
-## use `json-server` as develop server
+## use `json-server` as development server

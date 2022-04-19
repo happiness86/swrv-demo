@@ -3,9 +3,24 @@ import useSWRV from 'swrv'
 import Count from '~/components/Count.vue'
 const fetchFactory = (url: string) => fetch(url).then(r => r.json())
 
-const { data, error, mutate: mutateArticleList } = useSWRV('/api/articles', fetchFactory)
+interface Article {
+  id: number
+  author: string
+  link: string
+  title: string
+}
+const { data: articleList, error, mutate: mutateArticleList } = useSWRV<Article[]>('/api/articles', fetchFactory)
+const { data: hideList, mutate: mutateList } = useSWRV<number[]>('/hideArticles', () => [])
 
-const showCount = ref(true)
+const visibleArticles = computed(() => {
+  if (articleList.value === undefined)
+    return articleList.value
+
+  else
+    return articleList.value!.filter(article => !hideList.value?.includes(article.id))
+})
+
+const showCount = ref(false)
 setTimeout(() => showCount.value = true, 3000)
 
 const updateArticleList = async() => {
@@ -20,14 +35,23 @@ const updateArticleList = async() => {
   })
   mutateArticleList()
 }
+const hide = (id: number) => {
+  mutateList(() => hideList.value!.concat([id]))
+}
+
 </script>
 <template>
   <div v-if="error">
     something got wrong
   </div>
-  <div v-for="(item, index) in data" :key="item.id">
-    {{ index }}: <a :href="item.link">{{ item.title }}</a>
-  </div>
+  <ul>
+    <li v-for="item in visibleArticles" :key="item.id">
+      <span>{{ item.id }}: <a :href="item.link">{{ item.title }}</a></span>
+      <button @click="hide(item.id)">
+        hide
+      </button>
+    </li>
+  </ul>
   <Count v-if="showCount" />
   <button block border-1 p-2 m-auto @click="updateArticleList">
     update article list
